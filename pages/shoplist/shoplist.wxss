@@ -1,0 +1,4 @@
+/* pages/shoplist/shoplist.wxss */
+.shop-item {
+  display: flex;
+}
