@@ -5,7 +5,12 @@ Page({
    * 页面的初始数据
    */
   data: {
-    query: {}
+    query: {},
+    shopList: [],
+    page: 1,
+    pageSize: 10,
+    total: 0,
+    isloading: false
   },
 
   /**
@@ -14,15 +19,19 @@ Page({
   onLoad(options) {
     this.setData({
       query: options,
-      shopList: [],
-      page: 1,
-      pageSize: 10,
-      total: 0
     })
     this.getShopList()
   },
 
-  getShopList() {
+  getShopList(cb) {
+    this.setData({
+      isloading: true
+    })
+    // 展示loading效果
+    wx.showLoading({
+      title: '数据加载中...',
+    })
+
     wx.request({
       url: `https://applet-base-api-t.itheima.net/categories/${this.data.query.id}/shops`,
       method: 'GET',
@@ -35,6 +44,14 @@ Page({
           shopList: [... this.data.shopList, ... res.data],
           total: res.header['X-Total-Count'] - 0
         })
+      },
+      complete: () => {
+        //隐藏loading效果
+        wx.hideLoading(),
+        this.setData ({
+          isloading: false
+        }),
+        cb && cb()
       }
     })
   },
@@ -73,14 +90,35 @@ Page({
    * 页面相关事件处理函数--监听用户下拉动作
    */
   onPullDownRefresh() {
-
+    // 需要重置关键的数据
+    this.setData({
+      page: 1,
+      shopList: [],
+      total: 0
+    })
+    // 重新发起数据请求
+    this.getShopList(() => {
+      wx.stopPullDownRefresh()
+    })
   },
 
   /**
    * 页面上拉触底事件的处理函数
    */
   onReachBottom() {
+    if (this.data.page * this.data.pageSize >= this.data.total) {
+      //证明没有下一页的数据了
+      return wx.showToast({
+        title: '数据加载完毕',
+        icon: 'none'
+      })
+    }
+    if (this.data.isloading) return 
+    this.setData({
+      page: this.data.page + 1
+    })
 
+    this.getShopList()
   },
 
   /**
